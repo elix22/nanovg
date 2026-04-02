@@ -5,7 +5,7 @@
 /*
     sokol_nanovg.h -- NanoVG rendering backend for sokol_gfx.h
 
-    Project URL: https://github.com/aspect/sokol_nanovg
+    Project URL: https://github.com/memononen/nanovg
 
     Do this:
         #define SOKOL_NANOVG_IMPL
@@ -65,7 +65,7 @@
     =======
     zlib/libpng license
 
-    Copyright (c) 2024
+    Copyright (c) 2026
 
     This software is provided 'as-is', without any express or implied warranty.
     In no event will the authors be held liable for any damages arising from the
@@ -141,12 +141,6 @@ SOKOL_NANOVG_API_DECL NVGcontext* nvgCreateSokolWithDesc(int flags, const snvg_d
 
 /* Delete NanoVG context */
 SOKOL_NANOVG_API_DECL void nvgDeleteSokol(NVGcontext* ctx);
-
-/* Set current render pass view (for off-screen rendering) */
-SOKOL_NANOVG_API_DECL void snvg_set_view(NVGcontext* ctx, sg_image color_img, sg_image depth_img);
-
-/* Reset to default framebuffer rendering */
-SOKOL_NANOVG_API_DECL void snvg_reset_view(NVGcontext* ctx);
 
 #ifdef __cplusplus
 } /* extern "C" */
@@ -700,7 +694,7 @@ static int snvg__renderCreate(void* uptr) {
     ctx->pip_triangles = sg_make_pipeline(&pip_desc);
 
     /* Pipeline for stencil fill pass 1 - write to stencil
-       Note: sokol doesn't have TRIANGLE_FAN, so we use TRIANGULAR */
+       Note: sokol doesn't have TRIANGLE_FAN, so we use TRIANGLES */
     pip_desc.primitive_type = SG_PRIMITIVETYPE_TRIANGLES;
     pip_desc.colors[0].write_mask = SG_COLORMASK_NONE;  /* Don't write to color */
     pip_desc.stencil = (sg_stencil_state){
@@ -1494,18 +1488,6 @@ error:
 
 SOKOL_NANOVG_API_DECL void nvgDeleteSokol(NVGcontext* ctx) {
     nvgDeleteInternal(ctx);
-}
-
-SOKOL_NANOVG_API_DECL void snvg_set_view(NVGcontext* ctx, sg_image color_img, sg_image depth_img) {
-    (void)ctx;
-    (void)color_img;
-    (void)depth_img;
-    /* TODO: Implement custom render target support */
-}
-
-SOKOL_NANOVG_API_DECL void snvg_reset_view(NVGcontext* ctx) {
-    (void)ctx;
-    /* TODO: Implement custom render target support */
 }
 
 #endif /* SOKOL_NANOVG_IMPL */

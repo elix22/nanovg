@@ -29,7 +29,7 @@ The drawing context is created using a backend-specific constructor function. Us
 #define SOKOL_NANOVG_IMPL
 #include "sokol_nanovg.h"
 ...
-struct NVGcontext* vg = snvg_create(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
+struct NVGcontext* vg = nvgCreateSokol(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 ```
 
 The first parameter defines flags for creating the renderer:
@@ -69,7 +69,7 @@ nvgFill(vg);
 
 If rendering is wrong:
 
-- Make sure you have created a NanoVG context using `snvg_create()`
+- Make sure you have created a NanoVG context using `nvgCreateSokol()`
 - Make sure you have initialized your graphics backend with a stencil buffer
 - Make sure you have cleared the stencil buffer
 - Make sure all rendering calls happen between `nvgBeginFrame()` and `nvgEndFrame()`
