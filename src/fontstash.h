@@ -1433,13 +1433,15 @@ int fonsTextIterNext(FONScontext* stash, FONStextIter* iter, FONSquad* quad)
 {
 	FONSglyph* glyph = NULL;
 	const char* str = iter->next;
+	unsigned int last_dec_status = FONS_UTF8_ACCEPT;
 	iter->str = iter->next;
 
 	if (str == iter->end)
 		return 0;
 
 	for (; str != iter->end; str++) {
-		if (fons__decutf8(&iter->utf8state, &iter->codepoint, *(const unsigned char*)str))
+		last_dec_status = fons__decutf8(&iter->utf8state, &iter->codepoint, *(const unsigned char*)str);
+		if (last_dec_status)
 			continue;
 		str++;
 		// Get glyph and quad
@@ -1453,6 +1455,9 @@ int fonsTextIterNext(FONScontext* stash, FONStextIter* iter, FONSquad* quad)
 		break;
 	}
 	iter->next = str;
+
+	if (last_dec_status)
+		return 0;
 
 	return 1;
 }
@@ -1560,6 +1565,7 @@ float fonsTextBounds(FONScontext* stash,
 	}
 
 	advance = x - startx;
+	if (x > maxx) maxx = x;
 
 	// Align horizontally
 	if (state->align & FONS_ALIGN_LEFT) {
