@@ -960,10 +960,14 @@ static void snvg__convexFill(SNVGcontext* ctx, SNVGcall* call) {
 
     sg_apply_pipeline(ctx->pip_fill);
     snvg__setUniforms(ctx, call->uniformOffset, call->image);
-
     for (i = 0; i < npaths; i++) {
         if (paths[i].fillCount > 0)
             sg_draw(paths[i].fillOffset, paths[i].fillCount, 1);
+    }
+
+    // Draw anti-aliasing fringe (uses triangle strip, not triangles)
+    sg_apply_pipeline(ctx->pip_stroke);
+    for (i = 0; i < npaths; i++) {
         if (paths[i].strokeCount > 0)
             sg_draw(paths[i].strokeOffset, paths[i].strokeCount, 1);
     }
