@@ -1,1 +1,4 @@
 * text=auto eol=lf
+
+# This repo is C-only; avoid Linguist classifying headers as C++ via heuristics.
+*.h linguist-language=C
