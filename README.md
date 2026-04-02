@@ -87,12 +87,6 @@ make
 
 See the header file [nanovg.h](src/nanovg.h) for API reference.
 
-## Other Ports
-
-- [DX11 port](https://github.com/cmaughan/nanovg) by [Chris Maughan](https://github.com/cmaughan)
-- [Metal port](https://github.com/ollix/MetalNanoVG) by [Olli Wang](https://github.com/olliwang)
-- [bgfx port](https://github.com/bkaradzic/bgfx/tree/master/examples/20-nanovg) by [Branimir Karadžić](https://github.com/bkaradzic)
-
 ## License
 
 The library is licensed under the [zlib license](LICENSE).
