@@ -109,37 +109,28 @@
 extern "C" {
 #endif
 
-/* NanoVG creation flags */
 enum {
-    NVG_ANTIALIAS       = 1<<0, /* Enable anti-aliasing */
-    NVG_STENCIL_STROKES = 1<<1, /* Enable stencil strokes (higher quality) */
-    NVG_DEBUG           = 1<<2, /* Enable debug checks */
+    NVG_ANTIALIAS       = 1<<0,
+    NVG_STENCIL_STROKES = 1<<1,
+    NVG_DEBUG           = 1<<2,
 };
 
-/* Forward declarations */
 typedef struct NVGcontext NVGcontext;
 
-/* Allocator interface (matches sokol pattern) */
 typedef struct snvg_allocator_t {
     void* (*alloc_fn)(size_t size, void* user_data);
     void (*free_fn)(void* ptr, void* user_data);
     void* user_data;
 } snvg_allocator_t;
 
-/* Description for creating NanoVG sokol context */
 typedef struct snvg_desc_t {
-    int max_vertices;       /* Max vertices per frame (default: 8192) */
-    int max_commands;       /* Max draw commands per frame (default: 256) */
-    snvg_allocator_t allocator; /* Custom allocator (optional) */
+    int max_vertices;
+    int max_commands;
+    snvg_allocator_t allocator;
 } snvg_desc_t;
 
-/* Create NanoVG context with sokol backend */
 SOKOL_NANOVG_API_DECL NVGcontext* nvgCreateSokol(int flags);
-
-/* Create NanoVG context with sokol backend and custom configuration */
 SOKOL_NANOVG_API_DECL NVGcontext* nvgCreateSokolWithDesc(int flags, const snvg_desc_t* desc);
-
-/* Delete NanoVG context */
 SOKOL_NANOVG_API_DECL void nvgDeleteSokol(NVGcontext* ctx);
 
 #ifdef __cplusplus
@@ -171,30 +162,13 @@ SOKOL_NANOVG_API_DECL void nvgDeleteSokol(NVGcontext* ctx);
 #error "Please include nanovg.h before the sokol_nanovg.h implementation"
 #endif
 
-/*=== SHADER TYPE DEFINITIONS ================================================*/
+// Types needed by generated shader header
+typedef struct snvg_vec2 { float x, y; } snvg_vec2;
+typedef struct snvg_vec4 { float x, y, z, w; } snvg_vec4;
+typedef struct snvg_mat4 { float m[16]; } snvg_mat4;
 
-/* Vec2 type for shader uniforms */
-typedef struct snvg_vec2 {
-    float x, y;
-} snvg_vec2;
-
-/* Vec4 type for shader uniforms */
-typedef struct snvg_vec4 {
-    float x, y, z, w;
-} snvg_vec4;
-
-/* Mat4 type (not actually used but needed by shader header) */
-typedef struct snvg_mat4 {
-    float m[16];
-} snvg_mat4;
-
-/*=== SHADER INCLUDE =========================================================*/
-/* Include the generated shader header (created by sokol-shdc) */
 #include "snvg_shader.h"
 
-/*=== INTERNAL TYPES =========================================================*/
-
-/* Shader types - matches nanovg_gl.h */
 enum SNVGshaderType {
     SNVG_SHADER_FILLGRAD,
     SNVG_SHADER_FILLIMG,
@@ -202,7 +176,6 @@ enum SNVGshaderType {
     SNVG_SHADER_IMG
 };
 
-/* Draw call types */
 enum SNVGcallType {
     SNVG_NONE = 0,
     SNVG_FILL,
@@ -211,7 +184,6 @@ enum SNVGcallType {
     SNVG_TRIANGLES,
 };
 
-/* Texture entry */
 typedef struct SNVGtexture {
     int id;
     sg_image img;
@@ -220,11 +192,10 @@ typedef struct SNVGtexture {
     int width, height;
     int type;
     int flags;
-    int dirty;                      /* Flag indicating texture needs update */
-    unsigned char* pending_data;    /* Pending data for deferred update */
+    int dirty;
+    unsigned char* pending_data;
 } SNVGtexture;
 
-/* Draw call */
 typedef struct SNVGcall {
     int type;
     int image;
@@ -236,7 +207,6 @@ typedef struct SNVGcall {
     sg_blend_state blendFunc;
 } SNVGcall;
 
-/* Path data */
 typedef struct SNVGpath {
     int fillOffset;
     int fillCount;
@@ -244,10 +214,10 @@ typedef struct SNVGpath {
     int strokeCount;
 } SNVGpath;
 
-/* Fragment uniforms - matches shader fs_params */
+// Fragment uniforms (must match shader fs_params layout)
 typedef struct SNVGfragUniforms {
-    float scissorMat[12];   /* 3 vec4s */
-    float paintMat[12];     /* 3 vec4s */
+    float scissorMat[12];
+    float paintMat[12];
     float innerCol[4];
     float outerCol[4];
     float scissorExt[2];
@@ -261,35 +231,30 @@ typedef struct SNVGfragUniforms {
     float type;
 } SNVGfragUniforms;
 
-/* Main context */
 typedef struct SNVGcontext {
-    /* Sokol resources */
     sg_shader shader;
-    sg_pipeline pip_fill;           /* For convex fill and triangles */
-    sg_pipeline pip_fill_stencil;   /* For stencil fill pass 1 */
-    sg_pipeline pip_fill_antialias; /* For stencil fill pass 2 (AA) */
-    sg_pipeline pip_fill_draw;      /* For stencil fill pass 3 (draw) */
-    sg_pipeline pip_stroke;         /* For stroke rendering */
-    sg_pipeline pip_stroke_stencil; /* For stencil stroke pass 1 */
-    sg_pipeline pip_stroke_antialias; /* For stencil stroke pass 2 */
-    sg_pipeline pip_stroke_clear;   /* For stencil stroke clear */
-    sg_pipeline pip_triangles;      /* For textured triangles */
+    sg_pipeline pip_fill;
+    sg_pipeline pip_fill_stencil;
+    sg_pipeline pip_fill_antialias;
+    sg_pipeline pip_fill_draw;
+    sg_pipeline pip_stroke;
+    sg_pipeline pip_stroke_stencil;
+    sg_pipeline pip_stroke_antialias;
+    sg_pipeline pip_stroke_clear;
+    sg_pipeline pip_triangles;
     sg_buffer vbuf;
     sg_sampler default_sampler;
     sg_image dummy_tex;
     sg_view dummy_view;
     sg_bindings bindings;
 
-    /* View state */
     float view[2];
 
-    /* Texture management */
     SNVGtexture* textures;
     int ntextures;
     int ctextures;
     int textureId;
 
-    /* Per-frame buffers */
     SNVGcall* calls;
     int ccalls;
     int ncalls;
@@ -303,34 +268,26 @@ typedef struct SNVGcontext {
     int cuniforms;
     int nuniforms;
 
-    /* Flags and settings */
     int flags;
     int fragSize;
-
-    /* Allocator */
     snvg_allocator_t allocator;
 } SNVGcontext;
 
-/*=== HELPER FUNCTIONS =======================================================*/
-
 static int snvg__maxi(int a, int b) { return a > b ? a : b; }
-/* Convert triangle fan vertex count to triangle list vertex count */
+
 static int snvg__fanToTriCount(int fanCount) {
     if (fanCount < 3) return 0;
     return (fanCount - 2) * 3;
 }
 
-/* Convert triangle fan vertices to triangle list vertices
-   Returns the number of triangle list vertices written */
+// Convert triangle fan to triangle list (sokol doesn't support fans)
 static int snvg__fanToTriangles(struct NVGvertex* dst, const struct NVGvertex* src, int fanCount) {
     int i, triCount = 0;
     if (fanCount < 3) return 0;
-    /* Fan: v0 is center, then v1, v2, v3...
-       Triangles: (v0, v1, v2), (v0, v2, v3), ... */
     for (i = 2; i < fanCount; i++) {
-        dst[triCount++] = src[0];      /* Center vertex */
-        dst[triCount++] = src[i - 1];  /* Previous vertex */
-        dst[triCount++] = src[i];      /* Current vertex */
+        dst[triCount++] = src[0];
+        dst[triCount++] = src[i - 1];
+        dst[triCount++] = src[i];
     }
     return triCount;
 }
@@ -362,7 +319,9 @@ static void snvg__free(SNVGcontext* ctx, void* ptr) {
     }
 }
 
-/*=== TEXTURE MANAGEMENT =====================================================*/
+/*
+ * Texture management
+ */
 
 static SNVGtexture* snvg__allocTexture(SNVGcontext* ctx) {
     SNVGtexture* tex = NULL;
@@ -415,10 +374,8 @@ static int snvg__deleteTexture(SNVGcontext* ctx, int id) {
             if (ctx->textures[i].smp.id != SG_INVALID_ID) {
                 sg_destroy_sampler(ctx->textures[i].smp);
             }
-            /* Free pending data buffer if allocated */
-            if (ctx->textures[i].pending_data != NULL) {
+            if (ctx->textures[i].pending_data)
                 snvg__free(ctx, ctx->textures[i].pending_data);
-            }
             memset(&ctx->textures[i], 0, sizeof(ctx->textures[i]));
             return 1;
         }
@@ -426,68 +383,57 @@ static int snvg__deleteTexture(SNVGcontext* ctx, int id) {
     return 0;
 }
 
-/*=== BLEND STATE HELPERS ====================================================*/
+/*
+ * Blend state conversion
+ */
 
 static sg_blend_state snvg__blendCompositeOperation(NVGcompositeOperationState op) {
-    sg_blend_factor src_factor, dst_factor;
+    sg_blend_factor sfactor, dfactor;
 
-    /* Convert NanoVG blend factors to sokol blend factors */
     switch (op.srcRGB) {
-        case NVG_ZERO:                src_factor = SG_BLENDFACTOR_ZERO; break;
-        case NVG_ONE:                 src_factor = SG_BLENDFACTOR_ONE; break;
-        case NVG_SRC_COLOR:           src_factor = SG_BLENDFACTOR_SRC_COLOR; break;
-        case NVG_ONE_MINUS_SRC_COLOR: src_factor = SG_BLENDFACTOR_ONE_MINUS_SRC_COLOR; break;
-        case NVG_DST_COLOR:           src_factor = SG_BLENDFACTOR_DST_COLOR; break;
-        case NVG_ONE_MINUS_DST_COLOR: src_factor = SG_BLENDFACTOR_ONE_MINUS_DST_COLOR; break;
-        case NVG_SRC_ALPHA:           src_factor = SG_BLENDFACTOR_SRC_ALPHA; break;
-        case NVG_ONE_MINUS_SRC_ALPHA: src_factor = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA; break;
-        case NVG_DST_ALPHA:           src_factor = SG_BLENDFACTOR_DST_ALPHA; break;
-        case NVG_ONE_MINUS_DST_ALPHA: src_factor = SG_BLENDFACTOR_ONE_MINUS_DST_ALPHA; break;
-        case NVG_SRC_ALPHA_SATURATE:  src_factor = SG_BLENDFACTOR_SRC_ALPHA_SATURATED; break;
-        default:                      src_factor = SG_BLENDFACTOR_ONE; break;
+        case NVG_ZERO:                sfactor = SG_BLENDFACTOR_ZERO; break;
+        case NVG_ONE:                 sfactor = SG_BLENDFACTOR_ONE; break;
+        case NVG_SRC_COLOR:           sfactor = SG_BLENDFACTOR_SRC_COLOR; break;
+        case NVG_ONE_MINUS_SRC_COLOR: sfactor = SG_BLENDFACTOR_ONE_MINUS_SRC_COLOR; break;
+        case NVG_DST_COLOR:           sfactor = SG_BLENDFACTOR_DST_COLOR; break;
+        case NVG_ONE_MINUS_DST_COLOR: sfactor = SG_BLENDFACTOR_ONE_MINUS_DST_COLOR; break;
+        case NVG_SRC_ALPHA:           sfactor = SG_BLENDFACTOR_SRC_ALPHA; break;
+        case NVG_ONE_MINUS_SRC_ALPHA: sfactor = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA; break;
+        case NVG_DST_ALPHA:           sfactor = SG_BLENDFACTOR_DST_ALPHA; break;
+        case NVG_ONE_MINUS_DST_ALPHA: sfactor = SG_BLENDFACTOR_ONE_MINUS_DST_ALPHA; break;
+        case NVG_SRC_ALPHA_SATURATE:  sfactor = SG_BLENDFACTOR_SRC_ALPHA_SATURATED; break;
+        default:                      sfactor = SG_BLENDFACTOR_ONE; break;
     }
 
     switch (op.dstRGB) {
-        case NVG_ZERO:                dst_factor = SG_BLENDFACTOR_ZERO; break;
-        case NVG_ONE:                 dst_factor = SG_BLENDFACTOR_ONE; break;
-        case NVG_SRC_COLOR:           dst_factor = SG_BLENDFACTOR_SRC_COLOR; break;
-        case NVG_ONE_MINUS_SRC_COLOR: dst_factor = SG_BLENDFACTOR_ONE_MINUS_SRC_COLOR; break;
-        case NVG_DST_COLOR:           dst_factor = SG_BLENDFACTOR_DST_COLOR; break;
-        case NVG_ONE_MINUS_DST_COLOR: dst_factor = SG_BLENDFACTOR_ONE_MINUS_DST_COLOR; break;
-        case NVG_SRC_ALPHA:           dst_factor = SG_BLENDFACTOR_SRC_ALPHA; break;
-        case NVG_ONE_MINUS_SRC_ALPHA: dst_factor = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA; break;
-        case NVG_DST_ALPHA:           dst_factor = SG_BLENDFACTOR_DST_ALPHA; break;
-        case NVG_ONE_MINUS_DST_ALPHA: dst_factor = SG_BLENDFACTOR_ONE_MINUS_DST_ALPHA; break;
-        case NVG_SRC_ALPHA_SATURATE:  dst_factor = SG_BLENDFACTOR_SRC_ALPHA_SATURATED; break;
-        default:                      dst_factor = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA; break;
+        case NVG_ZERO:                dfactor = SG_BLENDFACTOR_ZERO; break;
+        case NVG_ONE:                 dfactor = SG_BLENDFACTOR_ONE; break;
+        case NVG_SRC_COLOR:           dfactor = SG_BLENDFACTOR_SRC_COLOR; break;
+        case NVG_ONE_MINUS_SRC_COLOR: dfactor = SG_BLENDFACTOR_ONE_MINUS_SRC_COLOR; break;
+        case NVG_DST_COLOR:           dfactor = SG_BLENDFACTOR_DST_COLOR; break;
+        case NVG_ONE_MINUS_DST_COLOR: dfactor = SG_BLENDFACTOR_ONE_MINUS_DST_COLOR; break;
+        case NVG_SRC_ALPHA:           dfactor = SG_BLENDFACTOR_SRC_ALPHA; break;
+        case NVG_ONE_MINUS_SRC_ALPHA: dfactor = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA; break;
+        case NVG_DST_ALPHA:           dfactor = SG_BLENDFACTOR_DST_ALPHA; break;
+        case NVG_ONE_MINUS_DST_ALPHA: dfactor = SG_BLENDFACTOR_ONE_MINUS_DST_ALPHA; break;
+        case NVG_SRC_ALPHA_SATURATE:  dfactor = SG_BLENDFACTOR_SRC_ALPHA_SATURATED; break;
+        default:                      dfactor = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA; break;
     }
 
     sg_blend_state blend = {
         .enabled = true,
-        .src_factor_rgb = src_factor,
-        .dst_factor_rgb = dst_factor,
-        .src_factor_alpha = src_factor,
-        .dst_factor_alpha = dst_factor,
+        .src_factor_rgb = sfactor,
+        .dst_factor_rgb = dfactor,
+        .src_factor_alpha = sfactor,
+        .dst_factor_alpha = dfactor,
     };
     return blend;
 }
 
-/*=== UNIFORM CONVERSION =====================================================*/
-
 static void snvg__xformToMat3x4(float* m3, float* t) {
-    /* Convert 2D transform (6 floats) to mat3 stored as 3 vec4s */
-    m3[0] = t[0];
-    m3[1] = t[1];
-    m3[2] = 0.0f;
-    m3[3] = 0.0f;  /* padding */
-    m3[4] = t[2];
-    m3[5] = t[3];
-    m3[6] = 0.0f;
-    m3[7] = 0.0f;  /* padding */
-    m3[8] = t[4];
-    m3[9] = t[5];
-    m3[10] = 1.0f;
-    m3[11] = 0.0f; /* padding */
+    m3[0] = t[0]; m3[1] = t[1]; m3[2] = 0.0f; m3[3] = 0.0f;
+    m3[4] = t[2]; m3[5] = t[3]; m3[6] = 0.0f; m3[7] = 0.0f;
+    m3[8] = t[4]; m3[9] = t[5]; m3[10] = 1.0f; m3[11] = 0.0f;
 }
 
 static NVGcolor snvg__premulColor(NVGcolor c) {
@@ -569,8 +515,6 @@ static int snvg__convertPaint(SNVGcontext* ctx, SNVGfragUniforms* frag, NVGpaint
     return 1;
 }
 
-/*=== UNIFORM BUFFER MANAGEMENT ==============================================*/
-
 static int snvg__allocFragUniforms(SNVGcontext* ctx, int n) {
     int ret = 0, structSize = sizeof(SNVGfragUniforms);
     if (ctx->nuniforms + n > ctx->cuniforms) {
@@ -590,8 +534,6 @@ static int snvg__allocFragUniforms(SNVGcontext* ctx, int n) {
 static SNVGfragUniforms* snvg__fragUniformPtr(SNVGcontext* ctx, int i) {
     return (SNVGfragUniforms*)&ctx->uniforms[i];
 }
-
-/*=== DRAW CALL MANAGEMENT ===================================================*/
 
 static SNVGcall* snvg__allocCall(SNVGcontext* ctx) {
     SNVGcall* ret = NULL;
@@ -641,19 +583,18 @@ static int snvg__allocVerts(SNVGcontext* ctx, int n) {
     return ret;
 }
 
-/*=== RENDER CALLBACK IMPLEMENTATIONS ========================================*/
+/*
+ * NVGparams render callbacks
+ */
 
 static int snvg__renderCreate(void* uptr) {
     SNVGcontext* ctx = (SNVGcontext*)uptr;
 
-    /* Create shader */
     ctx->shader = sg_make_shader(snvg_shader_desc(sg_query_backend()));
     if (ctx->shader.id == SG_INVALID_ID) {
         return 0;
     }
 
-    /* Create pipelines */
-    /* Base pipeline desc for reuse */
     sg_pipeline_desc pip_desc = {
         .shader = ctx->shader,
         .layout = {
@@ -684,19 +625,14 @@ static int snvg__renderCreate(void* uptr) {
         .label = "snvg-pip-fill",
     };
 
-    /* Pipeline for convex fills using triangle-list converted fan geometry */
     pip_desc.primitive_type = SG_PRIMITIVETYPE_TRIANGLES;
     ctx->pip_fill = sg_make_pipeline(&pip_desc);
 
-    /* Pipeline for triangles (same as fill but with different primitive type) */
-    pip_desc.primitive_type = SG_PRIMITIVETYPE_TRIANGLES;
     pip_desc.label = "snvg-pip-triangles";
     ctx->pip_triangles = sg_make_pipeline(&pip_desc);
 
-    /* Pipeline for stencil fill pass 1 - write to stencil
-       Note: sokol doesn't have TRIANGLE_FAN, so we use TRIANGLES */
-    pip_desc.primitive_type = SG_PRIMITIVETYPE_TRIANGLES;
-    pip_desc.colors[0].write_mask = SG_COLORMASK_NONE;  /* Don't write to color */
+    // Stencil fill pass 1: write to stencil (no color write)
+    pip_desc.colors[0].write_mask = SG_COLORMASK_NONE;
     pip_desc.stencil = (sg_stencil_state){
         .enabled = true,
         .front = {
@@ -719,7 +655,7 @@ static int snvg__renderCreate(void* uptr) {
     pip_desc.label = "snvg-pip-fill-stencil";
     ctx->pip_fill_stencil = sg_make_pipeline(&pip_desc);
 
-    /* Pipeline for stencil fill pass 2 - anti-aliased edge */
+    // Stencil fill pass 2: anti-aliased edge
     pip_desc.primitive_type = SG_PRIMITIVETYPE_TRIANGLE_STRIP;
     pip_desc.colors[0].write_mask = SG_COLORMASK_RGBA;
     pip_desc.colors[0].blend = (sg_blend_state){
@@ -751,8 +687,7 @@ static int snvg__renderCreate(void* uptr) {
     pip_desc.label = "snvg-pip-fill-antialias";
     ctx->pip_fill_antialias = sg_make_pipeline(&pip_desc);
 
-    /* Pipeline for stencil fill pass 3 - draw fill with stencil test and clear */
-    pip_desc.primitive_type = SG_PRIMITIVETYPE_TRIANGLE_STRIP;
+    // Stencil fill pass 3: draw fill where stencil != 0, then clear stencil
     pip_desc.stencil = (sg_stencil_state){
         .enabled = true,
         .front = {
@@ -774,12 +709,11 @@ static int snvg__renderCreate(void* uptr) {
     pip_desc.label = "snvg-pip-fill-draw";
     ctx->pip_fill_draw = sg_make_pipeline(&pip_desc);
 
-    /* Pipeline for stroke rendering */
+    // Stroke pipelines
     pip_desc.stencil.enabled = false;
     pip_desc.label = "snvg-pip-stroke";
     ctx->pip_stroke = sg_make_pipeline(&pip_desc);
 
-    /* Pipeline for stencil stroke pass 1 */
     pip_desc.stencil = (sg_stencil_state){
         .enabled = true,
         .front = {
@@ -801,7 +735,6 @@ static int snvg__renderCreate(void* uptr) {
     pip_desc.label = "snvg-pip-stroke-stencil";
     ctx->pip_stroke_stencil = sg_make_pipeline(&pip_desc);
 
-    /* Pipeline for stencil stroke pass 2 (AA) */
     pip_desc.stencil.front.compare = SG_COMPAREFUNC_EQUAL;
     pip_desc.stencil.back.compare = SG_COMPAREFUNC_EQUAL;
     pip_desc.stencil.front.pass_op = SG_STENCILOP_KEEP;
@@ -809,7 +742,6 @@ static int snvg__renderCreate(void* uptr) {
     pip_desc.label = "snvg-pip-stroke-antialias";
     ctx->pip_stroke_antialias = sg_make_pipeline(&pip_desc);
 
-    /* Pipeline for stencil stroke clear */
     pip_desc.colors[0].write_mask = SG_COLORMASK_NONE;
     pip_desc.stencil = (sg_stencil_state){
         .enabled = true,
@@ -832,8 +764,7 @@ static int snvg__renderCreate(void* uptr) {
     pip_desc.label = "snvg-pip-stroke-clear";
     ctx->pip_stroke_clear = sg_make_pipeline(&pip_desc);
 
-    /* Create vertex buffer (dynamic) */
-    sg_buffer_desc vbuf_desc = {
+    ctx->vbuf = sg_make_buffer(&(sg_buffer_desc){
         .usage = {
             .vertex_buffer = true,
             .stream_update = true,
@@ -841,44 +772,31 @@ static int snvg__renderCreate(void* uptr) {
         },
         .size = 65536 * sizeof(struct NVGvertex),
         .label = "snvg-vbuf",
-    };
-    ctx->vbuf = sg_make_buffer(&vbuf_desc);
+    });
 
-    /* Create default sampler */
-    sg_sampler_desc smp_desc = {
+    ctx->default_sampler = sg_make_sampler(&(sg_sampler_desc){
         .min_filter = SG_FILTER_LINEAR,
         .mag_filter = SG_FILTER_LINEAR,
         .mipmap_filter = SG_FILTER_NEAREST,
-        .min_lod = 0.0f,
-        .max_lod = 0.0f,
         .wrap_u = SG_WRAP_CLAMP_TO_EDGE,
         .wrap_v = SG_WRAP_CLAMP_TO_EDGE,
         .label = "snvg-sampler",
-    };
-    ctx->default_sampler = sg_make_sampler(&smp_desc);
+    });
 
-    /* Create dummy texture (white 1x1) */
     uint32_t white = 0xFFFFFFFF;
-    sg_image_desc dummy_desc = {
+    ctx->dummy_tex = sg_make_image(&(sg_image_desc){
         .width = 1,
         .height = 1,
         .pixel_format = SG_PIXELFORMAT_RGBA8,
-        .data.mip_levels[0] = {
-            .ptr = &white,
-            .size = sizeof(white),
-        },
+        .data.mip_levels[0] = { .ptr = &white, .size = sizeof(white) },
         .label = "snvg-dummy",
-    };
-    ctx->dummy_tex = sg_make_image(&dummy_desc);
+    });
 
-    /* Create view for dummy texture */
-    sg_view_desc dummy_view_desc = {
+    ctx->dummy_view = sg_make_view(&(sg_view_desc){
         .texture.image = ctx->dummy_tex,
         .label = "snvg-dummy-view",
-    };
-    ctx->dummy_view = sg_make_view(&dummy_view_desc);
+    });
 
-    /* Initialize bindings */
     ctx->bindings.vertex_buffers[0] = ctx->vbuf;
 
     return 1;
@@ -908,25 +826,22 @@ static int snvg__renderCreateTexture(void* uptr, int type, int w, int h, int ima
         size_t pitch = (type == NVG_TEXTURE_RGBA) ? w * 4 : w;
         img_desc.data.mip_levels[0] = (sg_range){ .ptr = data, .size = h * pitch };
     } else {
-        /* Use stream_update to allow multiple updates per frame (needed for fonts) */
+        // stream_update allows multiple updates per frame (font glyphs)
         img_desc.usage.immutable = false;
         img_desc.usage.stream_update = true;
     }
 
     if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
-        img_desc.num_mipmaps = 0;  /* Auto-generate */
+        img_desc.num_mipmaps = 0;
     }
 
     tex->img = sg_make_image(&img_desc);
 
-    /* Create view for this texture */
-    sg_view_desc view_desc = {
+    tex->tex_view = sg_make_view(&(sg_view_desc){
         .texture.image = tex->img,
         .label = "snvg-texture-view",
-    };
-    tex->tex_view = sg_make_view(&view_desc);
+    });
 
-    /* Create sampler for this texture */
     sg_filter min_filter = SG_FILTER_LINEAR;
     sg_filter mag_filter = SG_FILTER_LINEAR;
     sg_filter mip_filter = (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
@@ -967,14 +882,12 @@ static int snvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w,
     SNVGtexture* tex = snvg__findTexture(ctx, image);
     if (tex == NULL) return 0;
 
-    (void)x; (void)y; (void)w; (void)h;  /* Partial update not well-supported */
+    (void)x; (void)y; (void)w; (void)h;
 
-    /* Defer the texture update - store data and mark dirty */
-    /* NanoVG may call updateTexture multiple times per frame for font atlas */
+    // Defer texture updates - nanovg may call this multiple times per frame for font glyphs
     size_t bpp = (tex->type == NVG_TEXTURE_RGBA) ? 4 : 1;
     size_t data_size = (size_t)(tex->width * tex->height) * bpp;
     
-    /* Allocate or reuse pending data buffer */
     if (tex->pending_data == NULL) {
         tex->pending_data = (unsigned char*)snvg__alloc(ctx, data_size);
     }
@@ -986,7 +899,6 @@ static int snvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w,
     return 1;
 }
 
-/* Flush any pending texture updates - call once per frame before rendering */
 static void snvg__flushTextureUpdates(SNVGcontext* ctx) {
     for (int i = 0; i < ctx->ntextures; i++) {
         SNVGtexture* tex = &ctx->textures[i];
@@ -1030,13 +942,11 @@ static void snvg__renderCancel(void* uptr) {
 static void snvg__setUniforms(SNVGcontext* ctx, int uniformOffset, int image) {
     SNVGfragUniforms* frag = snvg__fragUniformPtr(ctx, uniformOffset);
 
-    /* Set vertex shader uniforms (view size) */
     vs_params_t vs_params = {
         .viewSize = { ctx->view[0], ctx->view[1] },
     };
     sg_apply_uniforms(UB_vs_params, &SG_RANGE(vs_params));
 
-    /* Set fragment uniforms */
     fs_params_t fs_params = {
         .scissorMat0 = { frag->scissorMat[0], frag->scissorMat[1], frag->scissorMat[2], frag->scissorMat[3] },
         .scissorMat1 = { frag->scissorMat[4], frag->scissorMat[5], frag->scissorMat[6], frag->scissorMat[7] },
@@ -1052,16 +962,10 @@ static void snvg__setUniforms(SNVGcontext* ctx, int uniformOffset, int image) {
     };
     sg_apply_uniforms(UB_fs_params, &SG_RANGE(fs_params));
 
-    /* Bind texture */
-    if (image != 0) {
-        SNVGtexture* tex = snvg__findTexture(ctx, image);
-        if (tex != NULL) {
-            ctx->bindings.views[VIEW_tex] = tex->tex_view;
-            ctx->bindings.samplers[SMP_smp] = tex->smp;
-        } else {
-            ctx->bindings.views[VIEW_tex] = ctx->dummy_view;
-            ctx->bindings.samplers[SMP_smp] = ctx->default_sampler;
-        }
+    SNVGtexture* tex = (image != 0) ? snvg__findTexture(ctx, image) : NULL;
+    if (tex) {
+        ctx->bindings.views[VIEW_tex] = tex->tex_view;
+        ctx->bindings.samplers[SMP_smp] = tex->smp;
     } else {
         ctx->bindings.views[VIEW_tex] = ctx->dummy_view;
         ctx->bindings.samplers[SMP_smp] = ctx->default_sampler;
@@ -1073,33 +977,29 @@ static void snvg__fill(SNVGcontext* ctx, SNVGcall* call) {
     SNVGpath* paths = &ctx->paths[call->pathOffset];
     int i, npaths = call->pathCount;
 
-    /* Draw stencil fill - using odd-even fill rule */
+    // Stencil fill (odd-even rule)
     sg_apply_pipeline(ctx->pip_fill_stencil);
     snvg__setUniforms(ctx, call->uniformOffset, 0);
 
     for (i = 0; i < npaths; i++) {
-        if (paths[i].fillCount > 0) {
+        if (paths[i].fillCount > 0)
             sg_draw(paths[i].fillOffset, paths[i].fillCount, 1);
-        }
     }
 
-    /* Draw anti-aliased edges */
+    // AA edges
     sg_apply_pipeline(ctx->pip_fill_antialias);
     snvg__setUniforms(ctx, call->uniformOffset + ctx->fragSize, call->image);
 
     if (ctx->flags & NVG_ANTIALIAS) {
         for (i = 0; i < npaths; i++) {
-            if (paths[i].strokeCount > 0) {
+            if (paths[i].strokeCount > 0)
                 sg_draw(paths[i].strokeOffset, paths[i].strokeCount, 1);
-            }
         }
     }
 
-    /* Draw fill using stencil */
+    // Fill where stencil != 0
     sg_apply_pipeline(ctx->pip_fill_draw);
     snvg__setUniforms(ctx, call->uniformOffset + ctx->fragSize, call->image);
-
-    /* Draw a full-screen quad to fill where stencil != 0 */
     sg_draw(call->triangleOffset, call->triangleCount, 1);
 }
 
@@ -1111,13 +1011,10 @@ static void snvg__convexFill(SNVGcontext* ctx, SNVGcall* call) {
     snvg__setUniforms(ctx, call->uniformOffset, call->image);
 
     for (i = 0; i < npaths; i++) {
-        if (paths[i].fillCount > 0) {
+        if (paths[i].fillCount > 0)
             sg_draw(paths[i].fillOffset, paths[i].fillCount, 1);
-        }
-        /* Draw fringes (anti-aliased edges) */
-        if (paths[i].strokeCount > 0) {
+        if (paths[i].strokeCount > 0)
             sg_draw(paths[i].strokeOffset, paths[i].strokeCount, 1);
-        }
     }
 }
 
@@ -1126,44 +1023,32 @@ static void snvg__stroke(SNVGcontext* ctx, SNVGcall* call) {
     int i, npaths = call->pathCount;
 
     if (ctx->flags & NVG_STENCIL_STROKES) {
-        /* Stencil-based stroke for higher quality */
         sg_apply_pipeline(ctx->pip_stroke_stencil);
         snvg__setUniforms(ctx, call->uniformOffset + ctx->fragSize, call->image);
-
         for (i = 0; i < npaths; i++) {
-            if (paths[i].strokeCount > 0) {
+            if (paths[i].strokeCount > 0)
                 sg_draw(paths[i].strokeOffset, paths[i].strokeCount, 1);
-            }
         }
 
-        /* Draw anti-aliased stroke */
         sg_apply_pipeline(ctx->pip_stroke_antialias);
         snvg__setUniforms(ctx, call->uniformOffset, call->image);
-
         for (i = 0; i < npaths; i++) {
-            if (paths[i].strokeCount > 0) {
+            if (paths[i].strokeCount > 0)
                 sg_draw(paths[i].strokeOffset, paths[i].strokeCount, 1);
-            }
         }
 
-        /* Clear stencil */
         sg_apply_pipeline(ctx->pip_stroke_clear);
         snvg__setUniforms(ctx, call->uniformOffset, 0);
-
         for (i = 0; i < npaths; i++) {
-            if (paths[i].strokeCount > 0) {
+            if (paths[i].strokeCount > 0)
                 sg_draw(paths[i].strokeOffset, paths[i].strokeCount, 1);
-            }
         }
     } else {
-        /* Simple stroke */
         sg_apply_pipeline(ctx->pip_stroke);
         snvg__setUniforms(ctx, call->uniformOffset, call->image);
-
         for (i = 0; i < npaths; i++) {
-            if (paths[i].strokeCount > 0) {
+            if (paths[i].strokeCount > 0)
                 sg_draw(paths[i].strokeOffset, paths[i].strokeCount, 1);
-            }
         }
     }
 }
@@ -1178,35 +1063,25 @@ static void snvg__renderFlush(void* uptr) {
     SNVGcontext* ctx = (SNVGcontext*)uptr;
     int i;
 
-    /* Flush any pending texture updates (deferred from renderUpdateTexture) */
     snvg__flushTextureUpdates(ctx);
 
     if (ctx->ncalls > 0) {
-        /* Upload vertex data */
-        sg_range verts_range = { .ptr = ctx->verts, .size = ctx->nverts * sizeof(struct NVGvertex) };
-        sg_update_buffer(ctx->vbuf, &verts_range);
+        sg_update_buffer(ctx->vbuf, &(sg_range){
+            .ptr = ctx->verts,
+            .size = ctx->nverts * sizeof(struct NVGvertex)
+        });
 
-        /* Process draw calls */
         for (i = 0; i < ctx->ncalls; i++) {
             SNVGcall* call = &ctx->calls[i];
             switch (call->type) {
-                case SNVG_FILL:
-                    snvg__fill(ctx, call);
-                    break;
-                case SNVG_CONVEXFILL:
-                    snvg__convexFill(ctx, call);
-                    break;
-                case SNVG_STROKE:
-                    snvg__stroke(ctx, call);
-                    break;
-                case SNVG_TRIANGLES:
-                    snvg__triangles(ctx, call);
-                    break;
+                case SNVG_FILL:       snvg__fill(ctx, call); break;
+                case SNVG_CONVEXFILL: snvg__convexFill(ctx, call); break;
+                case SNVG_STROKE:     snvg__stroke(ctx, call); break;
+                case SNVG_TRIANGLES:  snvg__triangles(ctx, call); break;
             }
         }
     }
 
-    /* Reset state for next frame */
     ctx->nverts = 0;
     ctx->npaths = 0;
     ctx->ncalls = 0;
@@ -1233,18 +1108,16 @@ static void snvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperationS
 
     if (npaths == 1 && paths[0].convex) {
         call->type = SNVG_CONVEXFILL;
-        call->triangleCount = 0;  /* No bounding box quad needed */
+        call->triangleCount = 0;
     }
 
-    /* Allocate vertices for all fill and stroke verts plus quad */
     maxverts = 0;
     for (i = 0; i < npaths; i++) {
         maxverts += snvg__fanToTriCount(paths[i].nfill);
         maxverts += paths[i].nstroke;
     }
-    if (call->type == SNVG_FILL) {
-        maxverts += 4;  /* Quad for fill */
-    }
+    if (call->type == SNVG_FILL)
+        maxverts += 4;
 
     offset = snvg__allocVerts(ctx, maxverts);
     if (offset == -1) goto error;
@@ -1266,11 +1139,9 @@ static void snvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperationS
         }
     }
 
-    /* Quad for fill */
     if (call->type == SNVG_FILL) {
         call->triangleOffset = offset;
         quad = &ctx->verts[offset];
-        /* Simple quad covering the bounds */
         quad[0].x = bounds[2]; quad[0].y = bounds[3]; quad[0].u = 0.5f; quad[0].v = 1.0f;
         quad[1].x = bounds[2]; quad[1].y = bounds[1]; quad[1].u = 0.5f; quad[1].v = 1.0f;
         quad[2].x = bounds[0]; quad[2].y = bounds[3]; quad[2].u = 0.5f; quad[2].v = 1.0f;
@@ -1437,8 +1308,6 @@ static void snvg__renderDelete(void* uptr) {
     snvg__free(ctx, ctx->calls);
     snvg__free(ctx, ctx);
 }
-
-/*=== PUBLIC API =============================================================*/
 
 SOKOL_NANOVG_API_DECL NVGcontext* nvgCreateSokol(int flags) {
     return nvgCreateSokolWithDesc(flags, NULL);
