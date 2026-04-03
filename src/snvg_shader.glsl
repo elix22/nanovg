@@ -2,7 +2,7 @@
     NanoVG shader for sokol_nanovg.h
 
     Compile with:
-    sokol-shdc -i snvg_shader.glsl -o snvg_shader.h -l glsl410:glsl300es:hlsl4:metal_macos:metal_ios:metal_sim:wgsl -f sokol_impl -b
+    sokol-shdc -i snvg_shader.glsl -o snvg_shader.h -l glsl410:glsl300es:hlsl4:metal_macos:metal_ios:metal_sim:wgsl:spirv_vk -f sokol_impl -b
 */
 @ctype mat4 snvg_mat4
 @ctype vec4 snvg_vec4

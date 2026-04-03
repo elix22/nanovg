@@ -3,6 +3,7 @@ AR ?= ar
 BUILD_DIR ?= build
 OBJ_DIR := $(BUILD_DIR)/obj
 MODE ?= debug
+BACKEND ?= glcore
 
 UNAME_S := $(shell uname -s)
 
@@ -21,8 +22,17 @@ CFLAGS += -O0 -g
 endif
 
 ifeq ($(UNAME_S),Linux)
-	CPPFLAGS += -D_POSIX_C_SOURCE=200809L -DSOKOL_GLCORE
-	LDLIBS += -lX11 -lXi -lXcursor -ldl -lpthread -lm -lGL
+	CPPFLAGS += -D_POSIX_C_SOURCE=200809L
+	LDLIBS += -lX11 -lXi -lXcursor -ldl -lpthread -lm
+	ifeq ($(BACKEND),glcore)
+		CPPFLAGS += -DSOKOL_GLCORE
+		LDLIBS += -lGL
+	else ifeq ($(BACKEND),vulkan)
+		CPPFLAGS += -DSOKOL_VULKAN
+		LDLIBS += -lvulkan
+	else
+		$(error Unsupported BACKEND: $(BACKEND))
+	endif
 else ifeq ($(UNAME_S),Darwin)
 $(error This Makefile currently supports Linux only)
 else
