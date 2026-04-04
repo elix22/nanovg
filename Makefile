@@ -62,7 +62,7 @@ $(RELEASE_LIB): $(RELEASE_LIB_OBJ)
 
 $(RELEASE_BIN): $(RELEASE_EXAMPLE_OBJ) $(RELEASE_LIB)
 	@mkdir -p $(dir $@)
-	$(CC) $^ $(LDLIBS) -o $@
+	$(CC) -s $^ $(LDLIBS) -o $@
 
 $(RELEASE_DIR)/obj/%.o: %.c
 	@mkdir -p $(dir $@)
