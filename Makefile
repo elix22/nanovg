@@ -3,6 +3,7 @@
 # Usage:
 #   make            Build release version
 #   make debug      Build debug version
+#   make web        Build WebGL version (requires Emscripten)
 #   make run        Build and run release version
 #   make clean      Remove build artifacts
 
@@ -16,6 +17,10 @@ RELEASE_FLAGS := -O2 -DNDEBUG
 # Debug build settings
 DEBUG_DIR := build/debug
 DEBUG_FLAGS := -O0 -g -DDEBUG
+
+# Web build settings
+WEB_DIR := build/web
+WEB_FLAGS := -O2 -DNDEBUG
 
 # Common settings
 CFLAGS := -std=c11 -Wall -Wextra
@@ -38,13 +43,18 @@ DEBUG_EXAMPLE_OBJ := $(patsubst %.c,$(DEBUG_DIR)/obj/%.o,$(EXAMPLE_SRC))
 DEBUG_LIB := $(DEBUG_DIR)/libnanovg.a
 DEBUG_BIN := $(DEBUG_DIR)/example
 
-.PHONY: all release debug run run-debug clean
+# Web targets
+WEB_OUT := $(WEB_DIR)/index.html
+
+.PHONY: all release debug web run run-debug clean
 
 all: release
 
 release: $(RELEASE_BIN)
 
 debug: $(DEBUG_BIN)
+
+web: $(WEB_OUT)
 
 run: release
 	@./$(RELEASE_BIN)
@@ -80,3 +90,19 @@ $(DEBUG_BIN): $(DEBUG_EXAMPLE_OBJ) $(DEBUG_LIB)
 $(DEBUG_DIR)/obj/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUG_FLAGS) -c $< -o $@
+
+# Web build rules
+$(WEB_OUT): example/example_web.c example/demo.c example/perf.c src/nanovg.c
+	@mkdir -p $(WEB_DIR)
+	emcc $^ $(WEB_FLAGS) \
+		-Isrc -Iexample -Isokol \
+		-DSOKOL_GLES3 \
+		-sUSE_WEBGL2=1 \
+		-sALLOW_MEMORY_GROWTH=1 \
+		--preload-file example/Roboto-Regular.ttf \
+		--preload-file example/Roboto-Bold.ttf \
+		--preload-file example/entypo.ttf \
+		--preload-file example/NotoEmoji-Regular.ttf \
+		--preload-file example/images \
+		--shell-file example/shell.html \
+		-o $@
