@@ -124,6 +124,7 @@ typedef struct snvg_allocator_t {
 } snvg_allocator_t;
 
 typedef struct snvg_desc_t {
+    int max_vertices;       // max vertices per frame, default: 65536
     snvg_allocator_t allocator;
 } snvg_desc_t;
 
@@ -267,6 +268,7 @@ typedef struct SNVGcontext {
 
     int flags;
     int fragSize;
+    int max_vertices;
     snvg_allocator_t allocator;
 } SNVGcontext;
 
@@ -724,7 +726,7 @@ static int snvg__renderCreate(void* uptr) {
             .stream_update = true,
             .immutable = false,
         },
-        .size = 65536 * sizeof(struct NVGvertex),
+        .size = (size_t)(ctx->max_vertices > 0 ? ctx->max_vertices : 65536) * sizeof(struct NVGvertex),
         .label = "snvg-vbuf",
     });
 
@@ -1273,6 +1275,7 @@ SOKOL_NANOVG_API_DECL NVGcontext* nvgCreateSokolWithDesc(int flags, const snvg_d
     sg->fragSize = sizeof(SNVGfragUniforms);
 
     if (desc != NULL) {
+        sg->max_vertices = desc->max_vertices;
         sg->allocator = desc->allocator;
     }
 
