@@ -1024,10 +1024,16 @@ static void snvg__renderFlush(void* uptr) {
     snvg__flushTextureUpdates(ctx);
 
     if (ctx->ncalls > 0) {
-        sg_update_buffer(ctx->vbuf, &(sg_range){
+        // Use sg_append_buffer so that multiple NanoVG passes per Sokol frame
+        // are allowed (e.g. a popup overlay rendered after ImGui). The returned
+        // byte offset is stored in vertex_buffer_offsets[0] so all sg_draw()
+        // base-element indices — which are relative to this flush's data — still
+        // resolve to the correct GPU addresses.
+        int byte_offset = sg_append_buffer(ctx->vbuf, &(sg_range){
             .ptr = ctx->verts,
             .size = ctx->nverts * sizeof(struct NVGvertex)
         });
+        ctx->bindings.vertex_buffer_offsets[0] = byte_offset;
 
         for (i = 0; i < ctx->ncalls; i++) {
             SNVGcall* call = &ctx->calls[i];
